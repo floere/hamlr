@@ -1,10 +1,11 @@
 require 'rubygems'
 require 'haml'
+require 'sass'
 require 'helper'
 
-engine = Haml::Engine
+hamlr = Haml::Engine
 
-processor = lambda {
+haml_processor = lambda {
   infiles = Dir["proto/**/*.haml"]
   
   infiles.each do |infilename|
@@ -12,7 +13,23 @@ processor = lambda {
     
     File.open(outfilename, 'w') do |outfile|
       File.open(infilename, 'r') do |infile|
-        outfile.puts engine.new(infile.read).render(Helper.new)
+        outfile.puts hamlr.new(infile.read).render(Helper.new)
+      end
+    end
+  end
+}
+
+sassr = Sass::Engine
+
+sass_processor = lambda {
+  infiles = Dir["proto/stylesheets/**/*.sass"]
+  
+  infiles.each do |infilename|
+    outfilename = infilename.gsub(/(^proto)/, 'generated').gsub!(/(sass$)/, 'css')
+    
+    File.open(outfilename, 'w') do |outfile|
+      File.open(infilename, 'r') do |infile|
+        outfile.puts sassr.new(infile.read).render
       end
     end
   end
@@ -20,9 +37,10 @@ processor = lambda {
 
 processing = Thread.new do
   while true
-    processor[]
-    sleep 3
     puts "processing"
+    haml_processor[]
+    sass_processor[]
+    sleep 3
   end
 end
 processing.join
